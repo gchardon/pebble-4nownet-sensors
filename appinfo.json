@@ -1,0 +1,47 @@
+{
+    "appKeys": {
+        "KEY_SENSOR_LIST": 3,
+        "KEY_SENSOR_LOCATION": 2,
+        "KEY_SENSOR_VALUE": 1,
+        "KEY_TIMESTAMP": 0
+    },
+    "capabilities": [
+        ""
+    ],
+    "companyName": "gchardon@gmail.com",
+    "longName": "4now Sensors",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/background.png",
+                "name": "IMAGE_BACKGROUND",
+                "type": "png"
+            },
+            {
+                "compatibility": "2.7",
+                "file": "fonts/perfect-dos-vga.ttf",
+                "name": "FONT_PERFECT_DOS_20",
+                "type": "font"
+            },
+            {
+                "compatibility": "2.7",
+                "file": "fonts/perfect-dos-vga.ttf",
+                "name": "FONT_PERFECT_DOS_48",
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "4now Sensors",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
+    "uuid": "07eb134b-3d05-43cb-b182-f056a6724117",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}

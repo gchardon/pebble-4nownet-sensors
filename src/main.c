@@ -7,7 +7,7 @@
     
 #define MAX_NB_SENSORS 8
 #define VALUE_STR_LEN sizeof("000.0")
-#define LOCATION_STR_LEN 16
+#define LOCATION_STR_LEN 8
     
 // Used to store received sensor data
 typedef struct SensorData {
@@ -18,6 +18,7 @@ typedef struct SensorData {
 static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_sensor_layer;
+static TextLayer *s_sensor_top_layer;
 
 static GFont s_time_font;
 static GFont s_sensor_font;
@@ -27,28 +28,51 @@ static GBitmap *s_background_bitmap;
 
 static SensorData s_sensor_array[MAX_NB_SENSORS];
 static unsigned char s_nb_sensors;
+static unsigned char s_current_sensor;
 
 static void update_time() {
 	// Get a tm structure
 	time_t temp = time(NULL);
 	struct tm *tick_time = localtime(&temp);
-	// Create a long-lived buffer
+	
+    // Create a long-lived buffer
 	static char buffer[] = "00:00";
-	// Write the current hours and minutes into the buffer
+	
+    // Write the current hours and minutes into the buffer
 	if (clock_is_24h_style() == true) {
-		//Use 24 hour format
+		// Use 24 hour format
 		strftime(buffer, sizeof("00:00"), "%H:%M", tick_time);
 	} else {
-		//Use 12 hour format
+		// Use 12 hour format
 		strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
 	}
-	// Display this time on the TextLayer
+	
+    // Display this time on the TextLayer
 	text_layer_set_text(s_time_layer, buffer);
 }
 
+static void update_sensor() {
+    static char sensor_layer_buffer[32];
+    static char sensor_layer_top_buffer[32];
+    if (s_nb_sensors > 0) {
+        snprintf(sensor_layer_buffer, sizeof(sensor_layer_buffer), "%s@%s", s_sensor_array[s_current_sensor].value, s_sensor_array[s_current_sensor].location);
+        APP_LOG(APP_LOG_LEVEL_INFO, "Displaying (low) sensor %d/%d %s", s_current_sensor+1, s_nb_sensors, sensor_layer_buffer);
+        text_layer_set_text(s_sensor_layer, sensor_layer_buffer);
+        s_current_sensor++;
+        if (s_current_sensor == s_nb_sensors) s_current_sensor = 0;
+        snprintf(sensor_layer_top_buffer, sizeof(sensor_layer_top_buffer), "%s@%s", s_sensor_array[s_current_sensor].value, s_sensor_array[s_current_sensor].location);
+        APP_LOG(APP_LOG_LEVEL_INFO, "Displaying (top) sensor %d/%d %s", s_current_sensor+1, s_nb_sensors, sensor_layer_top_buffer);
+        text_layer_set_text(s_sensor_top_layer, sensor_layer_top_buffer);
+        s_current_sensor++;
+        if (s_current_sensor == s_nb_sensors) s_current_sensor = 0;
+    }
+}
+
 static void main_window_load(Window *window) {
+    // Init global context
     s_nb_sensors = 0;
     APP_LOG(APP_LOG_LEVEL_INFO, "MAX_NB_SENSORS = %d", MAX_NB_SENSORS);
+    
 	// Create GBitmap, then set to created BitmapLayer
 	s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
 	s_background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
@@ -71,16 +95,27 @@ static void main_window_load(Window *window) {
 	// Add it as a child layer to the Window's root layer
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
     
-	// Create temperature Layer
+	// Create sensor Layer
 	s_sensor_layer = text_layer_create(GRect(0, 130, 144, 25));
 	text_layer_set_background_color(s_sensor_layer, GColorClear);
 	text_layer_set_text_color(s_sensor_layer, GColorWhite);
 	text_layer_set_text_alignment(s_sensor_layer, GTextAlignmentCenter);
 	text_layer_set_text(s_sensor_layer, "Loading...");
+    
+	s_sensor_top_layer = text_layer_create(GRect(0, 13, 144, 25));
+	text_layer_set_background_color(s_sensor_top_layer, GColorClear);
+	text_layer_set_text_color(s_sensor_top_layer, GColorWhite);
+	text_layer_set_text_alignment(s_sensor_top_layer, GTextAlignmentCenter);
+	text_layer_set_text(s_sensor_top_layer, "Loading...");
+    
+    
 	// Create second custom font, apply it and add to Window
 	s_sensor_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_20));
 	text_layer_set_font(s_sensor_layer, s_sensor_font);
+    text_layer_set_font(s_sensor_top_layer, s_sensor_font);
 	layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_sensor_layer));
+    layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_sensor_top_layer));
+    
 	// Make sure the time is displayed from the start
 	update_time();
 }
@@ -97,8 +132,10 @@ static void main_window_unload(Window *window) {
     
 	// Destroy TextLayer
 	text_layer_destroy(s_time_layer);
+    
 	// Destroy sensor elements
 	text_layer_destroy(s_sensor_layer);
+    text_layer_destroy(s_sensor_top_layer);
 	fonts_unload_custom_font(s_sensor_font);
 }
 
@@ -116,7 +153,9 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         
 		// Send the message!
 		app_message_outbox_send();
-	}
+	} else {
+        update_sensor();
+    }
 }
 
 char* copy_next_token(char* src, char delim, char* dest, int max) {
@@ -132,7 +171,6 @@ char* copy_next_token(char* src, char delim, char* dest, int max) {
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 	// Store incoming information
-    static char sensor_layer_buffer[32];
     char* pch;
     unsigned char sensor_idx = 0;
     
@@ -151,7 +189,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                     pch = copy_next_token(pch, '|', s_sensor_array[sensor_idx++].value, VALUE_STR_LEN);
                     APP_LOG(APP_LOG_LEVEL_INFO, "Sensor #%d Value is %s", sensor_idx, s_sensor_array[sensor_idx-1].value);
                 }
-               APP_LOG(APP_LOG_LEVEL_INFO, "Found %d Values", sensor_idx);
+                s_nb_sensors = sensor_idx;
+                APP_LOG(APP_LOG_LEVEL_INFO, "Found %d Values", sensor_idx);
 			    break;
             case KEY_SENSOR_LOCATION:
                 APP_LOG(APP_LOG_LEVEL_INFO, "Sensor Locations are %s", t->value->cstring);
@@ -175,11 +214,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 		t = dict_read_next(iterator);
 	}
     
-	// Assemble full string and display
-    if (sensor_idx > 0) {
-        snprintf(sensor_layer_buffer, sizeof(sensor_layer_buffer), "%s@%s", s_sensor_array[0].value, s_sensor_array[0].location);
-	    text_layer_set_text(s_sensor_layer, sensor_layer_buffer);
-    }
+	// Update display
+    s_current_sensor = 0;
+    update_sensor();
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {

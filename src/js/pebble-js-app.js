@@ -10,7 +10,7 @@ var xhrRequest = function(url, type, callback) {
 function getSensorData(pos) {
     // Construct URL
     // TODO add UID list to app config
-    var url = "http://www.4now.net/sasp/clavel/last/?uid=1,3,5,8,10";
+    var url = "http://www.4now.net/sasp/clavel/last/?uid=1,2,6,8,10";
 
     // Send request to 4now net
     xhrRequest(url, 'GET',

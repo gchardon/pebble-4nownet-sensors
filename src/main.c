@@ -1,14 +1,5 @@
-#include <pebble.h>
+#include "main.h"
 
-#define KEY_TIMESTAMP 0
-#define KEY_SENSOR_VALUE 1
-#define KEY_SENSOR_LOCATION 2
-#define KEY_SENSOR_LIST 3
-    
-#define MAX_NB_SENSORS 8
-#define VALUE_STR_LEN sizeof("000.0")
-#define LOCATION_STR_LEN 8
-    
 // Used to store received sensor data
 typedef struct SensorData {
     char value[VALUE_STR_LEN];
@@ -231,6 +222,10 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 	APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
+void accel_tap_handler(AccelAxisType axis, int32_t direction) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Tap received axis:%c dir:%ld", axis, direction);
+}
+
 static void init() {
 	// Create main Window element and assign to pointer
 	s_main_window = window_create();
@@ -240,6 +235,12 @@ static void init() {
 		.load = main_window_load,
         .unload = main_window_unload
     });
+    
+#ifdef PBL_COLOR
+    window_set_background_color(s_main_window, GColorPictonBlue);
+#else
+    window_set_background_color(s_main_window, GColorBlack);
+#endif
     
 	// Show the Window on the watch, with animated=true
 	window_stack_push(s_main_window, true);
@@ -253,11 +254,20 @@ static void init() {
 	app_message_register_outbox_failed(outbox_failed_callback);
 	app_message_register_outbox_sent(outbox_sent_callback);
     
+#ifdef USE_TAP    
+    // Subscribe to tap (accel service)
+    accel_tap_service_subscribe(&accel_tap_handler);
+#endif    
+    
 	// Open AppMessage
 	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
 static void deinit() {
+#ifdef USE_TAP        
+    accel_tap_service_unsubscribe();
+#endif    
+    
 	// Destroy Window
 	window_destroy(s_main_window);
 }

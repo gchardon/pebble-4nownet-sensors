@@ -27,7 +27,7 @@ function getSensorData(pos) {
             for (var i = 0; i < nb_sensors; i++) {
                 location += data[i].location_label.split(" ", 1)[0] + "|";
                 value +=  data[i].value.toFixed(1) + "|";
-                //timestamp = min(timestamp, data.timestamp); // FIXME use current timestamp
+                //timestamp = min(timestamp, data.timestamp); // @TODO use current timestamp
             }
             console.log("Sensing " + nb_sensors + " sensors data to the watch");
             
@@ -37,7 +37,6 @@ function getSensorData(pos) {
                 "KEY_SENSOR_VALUE": value,
                 "KEY_SENSOR_LOCATION": location,
             };
-            
 
             // Send to Pebble
             Pebble.sendAppMessage(dictionary,

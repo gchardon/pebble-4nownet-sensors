@@ -42,20 +42,36 @@ static void update_time() {
     text_layer_set_text(s_time_layer, buffer);
 }
 
-static void update_sensor() {
+static void update_single_sensor(TextLayer* layer, char* buffer, int buffer_len)
+{
+#ifdef PBL_COLOR
+    // kind of hacky: we use atoi on float string, i.e. gets integral part
+    int value = atoi(s_sensor_array[s_current_sensor].value); 
+    GColor col;
+    if (value > SENSOR_MID_TH) {
+        if (value > SENSOR_HIGH_TH) {
+            col = SENSOR_HIGH_COLOR;
+        } else {
+            col = SENSOR_MID_COLOR;    
+        }
+    } else {
+        col = SENSOR_LOW_COLOR;    
+    }
+    text_layer_set_text_color(layer, col);
+#endif    
+    snprintf(buffer, buffer_len, "%s@%s", s_sensor_array[s_current_sensor].value, s_sensor_array[s_current_sensor].location);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Displaying sensor %d/%d %s", s_current_sensor+1, s_nb_sensors, buffer);
+    text_layer_set_text(layer, buffer);
+    s_current_sensor++;    
+    if (s_current_sensor == s_nb_sensors) s_current_sensor = 0;
+}
+
+static void update_all_sensors() {
     static char sensor_layer_buffer[32];
     static char sensor_layer_top_buffer[32];
     if (s_nb_sensors > 0) {
-        snprintf(sensor_layer_buffer, sizeof(sensor_layer_buffer), "%s@%s", s_sensor_array[s_current_sensor].value, s_sensor_array[s_current_sensor].location);
-        APP_LOG(APP_LOG_LEVEL_INFO, "Displaying (low) sensor %d/%d %s", s_current_sensor+1, s_nb_sensors, sensor_layer_buffer);
-        text_layer_set_text(s_sensor_layer, sensor_layer_buffer);
-        s_current_sensor++;
-        if (s_current_sensor == s_nb_sensors) s_current_sensor = 0;
-        snprintf(sensor_layer_top_buffer, sizeof(sensor_layer_top_buffer), "%s@%s", s_sensor_array[s_current_sensor].value, s_sensor_array[s_current_sensor].location);
-        APP_LOG(APP_LOG_LEVEL_INFO, "Displaying (top) sensor %d/%d %s", s_current_sensor+1, s_nb_sensors, sensor_layer_top_buffer);
-        text_layer_set_text(s_sensor_top_layer, sensor_layer_top_buffer);
-        s_current_sensor++;
-        if (s_current_sensor == s_nb_sensors) s_current_sensor = 0;
+        update_single_sensor(s_sensor_layer, sensor_layer_buffer, sizeof(sensor_layer_buffer));
+        update_single_sensor(s_sensor_top_layer, sensor_layer_top_buffer, sizeof(sensor_layer_top_buffer));
     }
 }
 
@@ -89,13 +105,13 @@ static void main_window_load(Window *window) {
     // Create sensor Layer
     s_sensor_layer = text_layer_create(GRect(0, 130, 144, 25));
     text_layer_set_background_color(s_sensor_layer, GColorClear);
-    text_layer_set_text_color(s_sensor_layer, GColorWhite);
+    text_layer_set_text_color(s_sensor_layer, SENSOR_TEXT_COLOR);
     text_layer_set_text_alignment(s_sensor_layer, GTextAlignmentCenter);
     text_layer_set_text(s_sensor_layer, "Loading...");
     
     s_sensor_top_layer = text_layer_create(GRect(0, 13, 144, 25));
     text_layer_set_background_color(s_sensor_top_layer, GColorClear);
-    text_layer_set_text_color(s_sensor_top_layer, GColorWhite);
+    text_layer_set_text_color(s_sensor_top_layer, SENSOR_TEXT_COLOR);
     text_layer_set_text_alignment(s_sensor_top_layer, GTextAlignmentCenter);
     text_layer_set_text(s_sensor_top_layer, "Loading...");
     
@@ -144,9 +160,9 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         
         // Send the message!
         app_message_outbox_send();
-    } else {
-        update_sensor();
-    }
+    } 
+
+    update_all_sensors();
 }
 
 char* copy_next_token(char* src, char delim, char* dest, int max) {
@@ -204,10 +220,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         // Look for next item
         t = dict_read_next(iterator);
     }
-    
-    // Update display
     s_current_sensor = 0;
-    update_sensor();
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {

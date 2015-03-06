@@ -2,7 +2,7 @@
 
 // Used to store received sensor data
 typedef struct SensorData {
-    char value[VALUE_STR_LEN];
+    int value;
     char location[LOCATION_STR_LEN];
 } SensorData;
 
@@ -44,9 +44,8 @@ static void update_time() {
 
 static void update_single_sensor(TextLayer* layer, char* buffer, int buffer_len)
 {
+    int value = s_sensor_array[s_current_sensor].value;
 #ifdef PBL_COLOR
-    // kind of hacky: we use atoi on float string, i.e. gets integral part
-    int value = atoi(s_sensor_array[s_current_sensor].value); 
     GColor col;
     if (value > SENSOR_MID_TH) {
         if (value > SENSOR_HIGH_TH) {
@@ -59,7 +58,7 @@ static void update_single_sensor(TextLayer* layer, char* buffer, int buffer_len)
     }
     text_layer_set_text_color(layer, col);
 #endif    
-    snprintf(buffer, buffer_len, "%s@%s", s_sensor_array[s_current_sensor].value, s_sensor_array[s_current_sensor].location);
+    snprintf(buffer, buffer_len, "%dC %s", value, s_sensor_array[s_current_sensor].location);
     APP_LOG(APP_LOG_LEVEL_INFO, "Displaying sensor %d/%d %s", s_current_sensor+1, s_nb_sensors, buffer);
     text_layer_set_text(layer, buffer);
     s_current_sensor++;    
@@ -178,8 +177,9 @@ char* copy_next_token(char* src, char delim, char* dest, int max) {
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     // Store incoming information
+    static char value_buffer[8];
     char* pch;
-    unsigned char sensor_idx = 0;
+    unsigned char sensor_idx;
     
     // Read first item
     Tuple *t = dict_read_first(iterator);
@@ -193,8 +193,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                 pch = t->value->cstring;
                 sensor_idx = 0;
                 while (pch && sensor_idx < MAX_NB_SENSORS) {
-                    pch = copy_next_token(pch, '|', s_sensor_array[sensor_idx++].value, VALUE_STR_LEN);
-                    APP_LOG(APP_LOG_LEVEL_INFO, "Sensor #%d Value is %s", sensor_idx, s_sensor_array[sensor_idx-1].value);
+                    pch = copy_next_token(pch, '|', value_buffer, sizeof(value_buffer));
+                    s_sensor_array[sensor_idx++].value = atoi(value_buffer);
+                    APP_LOG(APP_LOG_LEVEL_INFO, "Sensor #%d Value is %d", sensor_idx, s_sensor_array[sensor_idx-1].value);
                 }
                 s_nb_sensors = sensor_idx;
                 APP_LOG(APP_LOG_LEVEL_INFO, "Found %d Values", sensor_idx);

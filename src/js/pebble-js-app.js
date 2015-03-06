@@ -26,8 +26,7 @@ function getSensorData(pos) {
             var nb_sensors = data.length;
             for (var i = 0; i < nb_sensors; i++) {
                 location += data[i].location_label.split(" ", 1)[0] + "|";
-                value +=  data[i].value.toFixed(1) + "|";
-                //timestamp = min(timestamp, data.timestamp); // @TODO use current timestamp
+                value += Math.round(data[i].value) + "|";
             }
             console.log("Sensing " + nb_sensors + " sensors data to the watch");
             

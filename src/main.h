@@ -5,15 +5,13 @@
 // Settings
 #define USE_TAP
 #define MAX_NB_SENSORS 8
-#define VALUE_STR_LEN sizeof("000.0")
 #define LOCATION_STR_LEN 8
 #ifdef PBL_COLOR
 #define SENSOR_TEXT_COLOR GColorLightGray
 #define SENSOR_LOW_COLOR GColorPictonBlue 
 #define SENSOR_MID_COLOR GColorMediumAquamarine
 #define SENSOR_HIGH_COLOR GColorYellow
-// Thresholds are integer since we only use the integer part
-// (i.e. sensor values are not rounded)
+// Thresholds for coloring values
 #define SENSOR_MID_TH 18  
 #define SENSOR_HIGH_TH 21
 #else

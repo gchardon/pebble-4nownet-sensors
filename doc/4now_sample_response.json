@@ -1,0 +1,110 @@
+[  
+   {  
+      "uid":0,
+      "timestamp":1425661598,
+      "from_svalue":true,
+      "location_label":"Kids Bedroom (ch2)",
+      "location_desc":"",
+      "value":32.0,
+      "type":"hum"
+   },
+   {  
+      "uid":1,
+      "timestamp":1425661716,
+      "from_svalue":true,
+      "location_label":"Kids Bedroom (ch2)",
+      "location_desc":"",
+      "value":20.399999999999999,
+      "type":"tmp"
+   },
+   {  
+      "uid":2,
+      "timestamp":1425661644,
+      "from_svalue":true,
+      "location_label":"Outside (ch1)",
+      "location_desc":"West side balcony",
+      "value":11.9,
+      "type":"tmp"
+   },
+   {  
+      "uid":3,
+      "timestamp":1425659630,
+      "from_svalue":false,
+      "location_label":"Outside (ch1)",
+      "location_desc":"West side balcony",
+      "value":18.0,
+      "type":"hum"
+   },
+   {  
+      "uid":4,
+      "timestamp":1392821793,
+      "from_svalue":false,
+      "location_label":"Outside (ch1)",
+      "location_desc":"West side balcony",
+      "value":0.0,
+      "type":"uvi"
+   },
+   {  
+      "uid":5,
+      "timestamp":1425659399,
+      "from_svalue":false,
+      "location_label":"Parents Bedroom (ch3)",
+      "location_desc":"",
+      "value":32.0,
+      "type":"hum"
+   },
+   {  
+      "uid":6,
+      "timestamp":1425661549,
+      "from_svalue":true,
+      "location_label":"Parents Bedroom (ch3)",
+      "location_desc":"",
+      "value":20.5,
+      "type":"tmp"
+   },
+   {  
+      "uid":7,
+      "timestamp":1425659325,
+      "from_svalue":false,
+      "location_label":"Outside (ch1)",
+      "location_desc":"West side balcony",
+      "value":1039.0,
+      "type":"baro"
+   },
+   {  
+      "uid":8,
+      "timestamp":1425661593,
+      "from_svalue":true,
+      "location_label":"Living Room (ch4)",
+      "location_desc":"",
+      "value":20.199999999999999,
+      "type":"tmp"
+   },
+   {  
+      "uid":9,
+      "timestamp":1425659449,
+      "from_svalue":false,
+      "location_label":"Living Room (ch4)",
+      "location_desc":"",
+      "value":35.0,
+      "type":"hum"
+   },
+   {  
+      "uid":10,
+      "timestamp":1425661472,
+      "from_svalue":true,
+      "location_label":"Guest Bedroom (ch5)",
+      "location_desc":"",
+      "value":19.699999999999999,
+      "type":"tmp"
+   },
+   {  
+      "uid":11,
+      "timestamp":1425661756,
+      "from_svalue":true,
+      "location_label":"Guest Bedroom (ch5)",
+      "location_desc":"",
+      "value":41.0,
+      "type":"hum"
+   }
+]

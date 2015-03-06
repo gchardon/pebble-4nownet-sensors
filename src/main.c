@@ -1,15 +1,28 @@
 #include "main.h"
 
-// Used to store received sensor data
-typedef struct SensorData {
-    int value;
-    char location[LOCATION_STR_LEN];
-} SensorData;
-
 static Window *s_main_window;
 static TextLayer *s_time_layer;
-static TextLayer *s_sensor_layer;
-static TextLayer *s_sensor_top_layer;
+
+// Sensor layers
+static TextLayer *s_sensor_layers[NB_SENSOR_LAYERS];
+static GRect s_sensor_layer_rects[NB_SENSOR_LAYERS] = {
+    {.origin = {.x = 0, .y = 13}, .size = {.w = 72, .h = 25}},
+    {.origin = {.x = 72, .y = 13}, .size = {.w = 72, .h = 25}},
+    {.origin = {.x = 0, .y = 130}, .size = {.w = 72, .h = 25}},
+    {.origin = {.x = 72, .y = 130}, .size = {.w = 72, .h = 25}}
+};
+
+#ifdef PBL_COLOR
+// Thresholds and colors used for sensor text color
+// We have to used {.argb=GColorXXARGB8} instead of GColorXX 
+// since GColor8 cast break gcc compilation (initializer element is not constant)
+static SensorColorThreshold s_sensor_color_thresholds[] = {
+    {.threshold = 18, .color = {.argb=GColorPictonBlueARGB8}},
+    {.threshold = 20, .color = {.argb=GColorMediumAquamarineARGB8}},
+    {.threshold = 24, .color = {.argb=GColorYellowARGB8}},
+    {.threshold = 0, .color = {.argb=GColorRedARGB8}}
+};
+#endif 
 
 static GFont s_time_font;
 static GFont s_sensor_font;
@@ -45,20 +58,22 @@ static void update_time() {
 static void update_single_sensor(TextLayer* layer, char* buffer, int buffer_len)
 {
     int value = s_sensor_array[s_current_sensor].value;
+    char unit = s_sensor_array[s_current_sensor].unit;
 #ifdef PBL_COLOR
     GColor col;
-    if (value > SENSOR_MID_TH) {
-        if (value > SENSOR_HIGH_TH) {
-            col = SENSOR_HIGH_COLOR;
-        } else {
-            col = SENSOR_MID_COLOR;    
-        }
+    if (unit == 'C') {
+        unsigned int i = 0;
+        while (i < ARRAY_LENGTH(s_sensor_color_thresholds) \
+            && value > s_sensor_color_thresholds[i].threshold) i++;   
+        col = s_sensor_color_thresholds[i].color;
     } else {
-        col = SENSOR_LOW_COLOR;    
+        col = SENSOR_TEXT_COLOR;
     }
     text_layer_set_text_color(layer, col);
 #endif    
-    snprintf(buffer, buffer_len, "%dC %s", value, s_sensor_array[s_current_sensor].location);
+    snprintf(buffer, buffer_len, "%d%c %s", 
+        value, unit,
+        s_sensor_array[s_current_sensor].location);
     APP_LOG(APP_LOG_LEVEL_INFO, "Displaying sensor %d/%d %s", s_current_sensor+1, s_nb_sensors, buffer);
     text_layer_set_text(layer, buffer);
     s_current_sensor++;    
@@ -66,11 +81,15 @@ static void update_single_sensor(TextLayer* layer, char* buffer, int buffer_len)
 }
 
 static void update_all_sensors() {
-    static char sensor_layer_buffer[32];
-    static char sensor_layer_top_buffer[32];
+    static char sensor_layer_buffer[SENSOR_BUFFER_LEN*NB_SENSOR_LAYERS];
+    char *buffer = sensor_layer_buffer;
     if (s_nb_sensors > 0) {
-        update_single_sensor(s_sensor_layer, sensor_layer_buffer, sizeof(sensor_layer_buffer));
-        update_single_sensor(s_sensor_top_layer, sensor_layer_top_buffer, sizeof(sensor_layer_top_buffer));
+        for (int i = 0; i < NB_SENSOR_LAYERS; i++) { 
+            update_single_sensor(s_sensor_layers[i], buffer, SENSOR_BUFFER_LEN);
+            buffer += SENSOR_BUFFER_LEN;
+        }
+    } else {
+        APP_LOG(APP_LOG_LEVEL_INFO, "No sensor data to display");
     }
 }
 
@@ -101,27 +120,18 @@ static void main_window_load(Window *window) {
     // Add it as a child layer to the Window's root layer
     layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
     
-    // Create sensor Layer
-    s_sensor_layer = text_layer_create(GRect(0, 130, 144, 25));
-    text_layer_set_background_color(s_sensor_layer, GColorClear);
-    text_layer_set_text_color(s_sensor_layer, SENSOR_TEXT_COLOR);
-    text_layer_set_text_alignment(s_sensor_layer, GTextAlignmentCenter);
-    text_layer_set_text(s_sensor_layer, "Loading...");
-    
-    s_sensor_top_layer = text_layer_create(GRect(0, 13, 144, 25));
-    text_layer_set_background_color(s_sensor_top_layer, GColorClear);
-    text_layer_set_text_color(s_sensor_top_layer, SENSOR_TEXT_COLOR);
-    text_layer_set_text_alignment(s_sensor_top_layer, GTextAlignmentCenter);
-    text_layer_set_text(s_sensor_top_layer, "Loading...");
-    
-    
-    // Create second custom font, apply it and add to Window
-    s_sensor_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PERFECT_DOS_20));
-    text_layer_set_font(s_sensor_layer, s_sensor_font);
-    text_layer_set_font(s_sensor_top_layer, s_sensor_font);
-    layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_sensor_layer));
-    layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_sensor_top_layer));
-    
+    // Create sensor layers
+    s_sensor_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+    for (int i = 0; i < NB_SENSOR_LAYERS; i++) {
+        s_sensor_layers[i] = text_layer_create(s_sensor_layer_rects[i]);
+        text_layer_set_background_color(s_sensor_layers[i], GColorClear);
+        text_layer_set_font(s_sensor_layers[i], s_sensor_font);
+        text_layer_set_text_color(s_sensor_layers[i], SENSOR_NA_COLOR);
+        text_layer_set_text_alignment(s_sensor_layers[i], GTextAlignmentCenter);
+        text_layer_set_text(s_sensor_layers[i], "Loading...");
+        layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_sensor_layers[i]));
+    }
+
     // Make sure the time is displayed from the start
     update_time();
 }
@@ -139,10 +149,10 @@ static void main_window_unload(Window *window) {
     // Destroy TextLayer
     text_layer_destroy(s_time_layer);
     
-    // Destroy sensor elements
-    text_layer_destroy(s_sensor_layer);
-    text_layer_destroy(s_sensor_top_layer);
-    fonts_unload_custom_font(s_sensor_font);
+    // Destroy sensor layers
+    for (int i = 0; i < NB_SENSOR_LAYERS; i++) {
+        text_layer_destroy(s_sensor_layers[i]);
+    }
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -166,7 +176,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 char* copy_next_token(char* src, char delim, char* dest, int max) {
     int l;
-    char* p = src;
+    char *p = src;
     while (*p  && (*p) != delim) p++;
     l = p - src;
     if (l >= max) l = max - 1;
@@ -178,8 +188,11 @@ char* copy_next_token(char* src, char delim, char* dest, int max) {
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     // Store incoming information
     static char value_buffer[8];
-    char* pch;
+    char unit;
+    char *pch;
     unsigned char sensor_idx;
+
+    APP_LOG(APP_LOG_LEVEL_INFO, "Receiving data from the phone...");
     
     // Read first item
     Tuple *t = dict_read_first(iterator);
@@ -195,18 +208,33 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                 while (pch && sensor_idx < MAX_NB_SENSORS) {
                     pch = copy_next_token(pch, '|', value_buffer, sizeof(value_buffer));
                     s_sensor_array[sensor_idx++].value = atoi(value_buffer);
-                    APP_LOG(APP_LOG_LEVEL_INFO, "Sensor #%d Value is %d", sensor_idx, s_sensor_array[sensor_idx-1].value);
                 }
                 s_nb_sensors = sensor_idx;
                 APP_LOG(APP_LOG_LEVEL_INFO, "Found %d Values", sensor_idx);
                 break;
+            case KEY_SENSOR_TYPE:
+                APP_LOG(APP_LOG_LEVEL_INFO, "Sensor Types are %s", t->value->cstring);
+                pch = t->value->cstring;
+                sensor_idx = 0;
+                while (pch && sensor_idx < MAX_NB_SENSORS) {
+                    pch = copy_next_token(pch, '|', value_buffer, sizeof(value_buffer));
+                    switch (value_buffer[0]) {
+                        case 't': unit = 'C'; break; // Temperature in °Celcius
+                        case 'h': unit = '%'; break; // Humidity in %
+                        case 'u': unit = 'U'; break; // UV in UV index
+                        case 'b': unit = 'h'; break; // Barometer / Atm Pression in hPa
+                        default: unit = ' '; break;
+                    }
+                    s_sensor_array[sensor_idx++].unit = unit;
+                }
+                APP_LOG(APP_LOG_LEVEL_INFO, "Found %d Sensor Types", sensor_idx);
+                break;                
             case KEY_SENSOR_LOCATION:
                 APP_LOG(APP_LOG_LEVEL_INFO, "Sensor Locations are %s", t->value->cstring);
                 pch = t->value->cstring;
                 sensor_idx = 0;
                 while (pch && sensor_idx < MAX_NB_SENSORS) {
                     pch = copy_next_token(pch, '|', s_sensor_array[sensor_idx++].location, LOCATION_STR_LEN);
-                    APP_LOG(APP_LOG_LEVEL_INFO, "Sensor #%d Location is %s", sensor_idx, s_sensor_array[sensor_idx-1].location);
                 }
                 APP_LOG(APP_LOG_LEVEL_INFO, "Found %d Locations", sensor_idx);
                 break;
@@ -274,6 +302,7 @@ static void init() {
 #endif    
     
     // Open AppMessage
+    APP_LOG(APP_LOG_LEVEL_INFO, "Max Inbox size: %lu, Outbox size: %lu", app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
     app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 

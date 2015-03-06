@@ -1,7 +1,8 @@
 {
     "appKeys": {
-        "KEY_SENSOR_LIST": 3,
-        "KEY_SENSOR_LOCATION": 2,
+        "KEY_SENSOR_LIST": 4,
+        "KEY_SENSOR_LOCATION": 3,
+        "KEY_SENSOR_TYPE": 2,
         "KEY_SENSOR_VALUE": 1,
         "KEY_TIMESTAMP": 0
     },

@@ -8,9 +8,11 @@ var xhrRequest = function(url, type, callback) {
 };
 
 function getSensorData(pos) {
-    // Construct URL
-    // TODO add UID list to app config
-    var url = "http://www.4now.net/sasp/clavel/last/?uid=1,2,6,8,10";
+    // Sensor End point
+    // @TODO add to config?
+    var url = "http://www.4now.net/sasp/clavel/last/?uid=1,6,10,8,0,5,2,3";
+    // ALl sensors
+    //var url = "http://www.4now.net//sasp/clavel/last/?uid=1,6,10,8,2,3,4,7,0,5,11,9";
 
     // Send request to 4now net
     xhrRequest(url, 'GET',
@@ -21,19 +23,22 @@ function getSensorData(pos) {
             
             var location = "";
             var value = "";
+            var stype = "";
             var timestamp = Math.floor(Date.now() / 1000);            
             
             var nb_sensors = data.length;
             for (var i = 0; i < nb_sensors; i++) {
                 location += data[i].location_label.split(" ", 1)[0] + "|";
                 value += Math.round(data[i].value) + "|";
+                stype += data[i].type.charAt(0) + "|";
             }
-            console.log("Sensing " + nb_sensors + " sensors data to the watch");
+            console.log("Sending " + nb_sensors + " sensors data to the watch");
             
             // Assemble dictionary using our keys
             var dictionary = {
                 "KEY_TIMESTAMP": timestamp,
                 "KEY_SENSOR_VALUE": value,
+                "KEY_SENSOR_TYPE": stype,
                 "KEY_SENSOR_LOCATION": location,
             };
 

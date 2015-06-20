@@ -15,9 +15,10 @@
     "resources": {
         "media": [
             {
-                "file": "images/background.png",
-                "name": "IMAGE_BACKGROUND",
-                "type": "png"
+                "compatibility": "2.7",
+                "file": "fonts/perfect-dos-vga.ttf",
+                "name": "FONT_PERFECT_DOS_48",
+                "type": "font"
             },
             {
                 "compatibility": "2.7",
@@ -26,10 +27,9 @@
                 "type": "font"
             },
             {
-                "compatibility": "2.7",
-                "file": "fonts/perfect-dos-vga.ttf",
-                "name": "FONT_PERFECT_DOS_48",
-                "type": "font"
+                "file": "images/background.png",
+                "name": "IMAGE_BACKGROUND",
+                "type": "png"
             }
         ]
     },
@@ -40,7 +40,6 @@
         "basalt"
     ],
     "uuid": "07eb134b-3d05-43cb-b182-f056a6724117",
-    "versionCode": 1,
     "versionLabel": "1.0",
     "watchapp": {
         "watchface": true

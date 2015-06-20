@@ -63,7 +63,7 @@ static void update_single_sensor(TextLayer* layer, char* buffer, int buffer_len)
     GColor col;
     if (unit == 'C') {
         unsigned int i = 0;
-        while (i < ARRAY_LENGTH(s_sensor_color_thresholds) \
+        while (i < (ARRAY_LENGTH(s_sensor_color_thresholds)-1) \
             && value > s_sensor_color_thresholds[i].threshold) i++;   
         col = s_sensor_color_thresholds[i].color;
     } else {
